@@ -7,6 +7,9 @@ public class SpotifyPlaylistDTO {
 
     private Boolean collaborative;
     private String description;
+    private String name;
+
+    private SpotifyTracksDTO tracks;
 
     public Boolean getCollaborative() {
         return collaborative;
@@ -22,5 +25,21 @@ public class SpotifyPlaylistDTO {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public SpotifyTracksDTO getTracks() {
+        return tracks;
+    }
+
+    public void setTracks(SpotifyTracksDTO tracks) {
+        this.tracks = tracks;
     }
 }

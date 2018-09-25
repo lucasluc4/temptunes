@@ -1,13 +1,11 @@
 package com.lucasluc4.temptunes.thirdparty;
 
+import com.lucasluc4.temptunes.model.Playlist;
 import com.lucasluc4.temptunes.thirdparty.dto.SpotifyPlaylistDTO;
 import com.lucasluc4.temptunes.thirdparty.dto.SpotifyTokenDTO;
+import com.lucasluc4.temptunes.thirdparty.dto.parser.SpotifyPlaylistDTOParser;
 import com.lucasluc4.temptunes.utils.FeingBuilderUtil;
-import feign.Feign;
-import feign.Logger;
 import feign.form.FormEncoder;
-import feign.jackson.JacksonDecoder;
-import feign.jackson.JacksonEncoder;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.stereotype.Service;
 
@@ -29,15 +27,11 @@ public class SpotifyApiService {
         spotifyApi = new FeingBuilderUtil<>(SpotifyApi.class)
                 .build("https://api.spotify.com/v1");
 
-        loginSpotifyApi = Feign.builder().encoder(new FormEncoder())
-                .decoder(new JacksonDecoder())
-                .logLevel(Logger.Level.FULL)
-                .target(LoginSpotifyApi.class, "https://accounts.spotify.com/api");
-//                new FeingBuilderUtil<>(LoginSpotifyApi.class).build("https://accounts.spotify.com/api");
+        loginSpotifyApi = new FeingBuilderUtil<>(LoginSpotifyApi.class)
+                .build("https://accounts.spotify.com/api", new FormEncoder());
     }
 
-    public SpotifyPlaylistDTO getPlaylistById (String id) {
-
+    public Playlist getPlaylistById (String id) {
         if (bearerToken == null) {
             authenticate();
         }
@@ -45,9 +39,8 @@ public class SpotifyApiService {
         Map<String, Object> headerMap = new HashMap<>();
         headerMap.put("Authorization", "Bearer " + bearerToken);
 
-        //BQBKV0ucJdwZDrEWILaTTl8suGcSRFhq0WERCk5xFe-U2qsV21s_YCqsyvjD6T3l4UZeppO0teoXKPz6idI
-
-        return spotifyApi.getPlaylistById(id, headerMap);
+        SpotifyPlaylistDTO spotifyPlaylistDTO = spotifyApi.getPlaylistById(id, headerMap);
+        return SpotifyPlaylistDTOParser.parse(spotifyPlaylistDTO);
     }
 
     private void authenticate() {
