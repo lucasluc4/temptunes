@@ -1,6 +1,7 @@
 package com.lucasluc4.temptunes.service.resolver;
 
 import com.lucasluc4.temptunes.enums.SpotifyPlaylist;
+import com.lucasluc4.temptunes.exception.PlaylistNotFoundException;
 import com.lucasluc4.temptunes.service.resolver.spotifyplaylistresolver.SpotifyPlaylistByTemperatureSolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,6 @@ public class SpotifyPlaylistByTemperatureFactory {
             }
         }
 
-        return null; //TODO: throw not found exception
+        throw new PlaylistNotFoundException("Playlist not found for temperature: " + temperature);
     }
 }

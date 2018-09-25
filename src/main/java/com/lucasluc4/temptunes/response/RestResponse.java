@@ -4,9 +4,9 @@ public class RestResponse {
 
     private Integer code;
     private ErrorDetails errorDetails;
-    private String data;
+    private Object data;
 
-    public RestResponse(Integer code, ErrorDetails errorDetails, String data) {
+    public RestResponse(Integer code, ErrorDetails errorDetails, Object data) {
         this.code = code;
         this.errorDetails = errorDetails;
         this.data = data;
@@ -28,7 +28,7 @@ public class RestResponse {
         this.errorDetails = errorDetails;
     }
 
-    public String getData() {
+    public Object getData() {
         return data;
     }
 

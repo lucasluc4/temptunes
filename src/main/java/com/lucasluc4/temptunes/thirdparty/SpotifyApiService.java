@@ -1,12 +1,16 @@
 package com.lucasluc4.temptunes.thirdparty;
 
+import com.lucasluc4.temptunes.exception.GenericTempTunesException;
+import com.lucasluc4.temptunes.exception.PlaylistNotFoundException;
 import com.lucasluc4.temptunes.model.Playlist;
 import com.lucasluc4.temptunes.thirdparty.dto.SpotifyPlaylistDTO;
 import com.lucasluc4.temptunes.thirdparty.dto.SpotifyTokenDTO;
 import com.lucasluc4.temptunes.thirdparty.dto.parser.SpotifyPlaylistDTOParser;
 import com.lucasluc4.temptunes.utils.FeingBuilderUtil;
+import feign.FeignException;
 import feign.form.FormEncoder;
 import org.apache.commons.codec.binary.Base64;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -32,15 +36,28 @@ public class SpotifyApiService {
     }
 
     public Playlist getPlaylistById (String id) {
-        if (bearerToken == null) {
-            authenticate();
+
+        try {
+
+            if (bearerToken == null) {
+                authenticate();
+            }
+
+            Map<String, Object> headerMap = new HashMap<>();
+            headerMap.put("Authorization", "Bearer " + bearerToken);
+
+            SpotifyPlaylistDTO spotifyPlaylistDTO = spotifyApi.getPlaylistById(id, headerMap);
+            return SpotifyPlaylistDTOParser.parse(spotifyPlaylistDTO);
+
+        } catch (FeignException e) {
+
+            if (e.status() == HttpStatus.NOT_FOUND.value()) {
+                throw new PlaylistNotFoundException("Playlist not found: " + id);
+            }
+
+            throw new GenericTempTunesException();
         }
 
-        Map<String, Object> headerMap = new HashMap<>();
-        headerMap.put("Authorization", "Bearer " + bearerToken);
-
-        SpotifyPlaylistDTO spotifyPlaylistDTO = spotifyApi.getPlaylistById(id, headerMap);
-        return SpotifyPlaylistDTOParser.parse(spotifyPlaylistDTO);
     }
 
     private void authenticate() {

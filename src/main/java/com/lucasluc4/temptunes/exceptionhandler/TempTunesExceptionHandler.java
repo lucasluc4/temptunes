@@ -1,5 +1,6 @@
 package com.lucasluc4.temptunes.exceptionhandler;
 
+import com.lucasluc4.temptunes.exception.NotFoundException;
 import com.lucasluc4.temptunes.exception.TempTunesError;
 import com.lucasluc4.temptunes.exception.ValidationException;
 import com.lucasluc4.temptunes.response.ErrorDetails;
@@ -17,6 +18,16 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class TempTunesExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final String unknownError = "An unknown internal error occurred";
+
+    @ExceptionHandler(NotFoundException.class)
+    public final ResponseEntity<RestResponse> handleNotFoundException(NotFoundException ex, WebRequest request) {
+
+        ErrorDetails errorDetails = new ErrorDetails(ex.getErrorTitle(), ex.getMessage());
+
+        RestResponse restResponse = new RestResponse(HttpStatus.NOT_FOUND.value(), errorDetails, null);
+
+        return new ResponseEntity<>(restResponse, HttpStatus.NOT_FOUND);
+    }
 
     @ExceptionHandler(ValidationException.class)
     public final ResponseEntity<RestResponse> handleValidationException(ValidationException ex, WebRequest request) {
