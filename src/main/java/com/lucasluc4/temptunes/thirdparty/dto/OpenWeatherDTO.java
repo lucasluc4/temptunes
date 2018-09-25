@@ -1,8 +1,5 @@
 package com.lucasluc4.temptunes.thirdparty.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class OpenWeatherDTO {
 
     private OpenWeatherMainDTO main;
