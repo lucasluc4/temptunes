@@ -14,6 +14,8 @@ import feign.form.FormEncoder;
 import org.apache.commons.codec.binary.Base64;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,8 @@ import java.util.Map;
 
 @Service
 public class SpotifyApiService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpotifyApiService.class);
 
     private static final String REDIS_BUCKET_TOKEN = "spotify.redis.bucket.token";
     private static final String REDIS_AUTH_LOCK = "spotify.redis.lock.auth";
@@ -58,20 +62,29 @@ public class SpotifyApiService {
 
     public Playlist getPlaylistById (String id) {
 
+        LOGGER.info("Retrieving playlist for id: " + id);
+
         try {
+
+            LOGGER.info("Fetching Spotify token");
 
             RBucket<String> bucket = redissonClient.getRedissonClient()
                     .getBucket(environment.getProperty(REDIS_BUCKET_TOKEN));
             String bearerToken = bucket.get();
 
             if (bearerToken == null) {
+                LOGGER.info("No token found. Trying to authenticate again.");
                 bearerToken = authenticate();
             }
 
+            LOGGER.info("Retrieving playlist from Spotify");
+
             Map<String, Object> headerMap = new HashMap<>();
             headerMap.put("Authorization", "Bearer " + bearerToken);
-
             SpotifyPlaylistDTO spotifyPlaylistDTO = spotifyApi.getPlaylistById(id, headerMap);
+
+            LOGGER.info("Playlist retrieved.");
+
             return SpotifyPlaylistDTOParser.parse(spotifyPlaylistDTO);
 
         } catch (FeignException e) {
@@ -81,6 +94,9 @@ public class SpotifyApiService {
             }
 
             if (e.status() == HttpStatus.UNAUTHORIZED.value()) {
+
+                LOGGER.info("Token is invalid. Trying to authenticate again.");
+
                 authenticate();
                 return getPlaylistById(id);
             }
@@ -94,9 +110,13 @@ public class SpotifyApiService {
 
         RLock lock = redissonClient.getRedissonClient().getLock(environment.getProperty(REDIS_AUTH_LOCK));
 
+        LOGGER.info("Locking spotify auth lock.");
+
         lock.lock();
 
         if (lock.isHeldByCurrentThread()) {
+
+            LOGGER.info("Spotify auth lock locked successfully.");
 
             String clientId = environment.getProperty(SPOTIFY_CLIENT_ID);
             String clientSecret = environment.getProperty(SPOTIFY_CLIENT_SECRET);
@@ -107,7 +127,11 @@ public class SpotifyApiService {
             Map<String, Object> headerMap = new HashMap<>();
             headerMap.put("Authorization", "Basic " + encodedBasicAuthHeader);
 
+            LOGGER.info("Authenticating...");
+
             SpotifyTokenDTO response = loginSpotifyApi.getToken("client_credentials", headerMap);
+
+            LOGGER.info("Token retrieved.");
 
             String bearerToken = response.getAccess_token();
 
@@ -115,7 +139,11 @@ public class SpotifyApiService {
                     .getBucket(environment.getProperty(REDIS_BUCKET_TOKEN));
             bucket.set(bearerToken);
 
+            LOGGER.info("Token saved.");
+
             lock.unlock();
+
+            LOGGER.info("Spotify auth lock unlocked.");
 
             return bearerToken;
 
