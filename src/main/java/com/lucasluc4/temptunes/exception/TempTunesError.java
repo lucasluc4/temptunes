@@ -5,7 +5,8 @@ public enum TempTunesError {
     INVALID_CITY_NAME("error.invalid.city.name"),
     INVALID_LAT_LONG("error.invalid.lat.long"),
     CITY_NOT_FOUND("error.city.not.found"),
-    PLAYLIST_NOT_FOUND("error.playlist.not.found");
+    PLAYLIST_NOT_FOUND("error.playlist.not.found"),
+    COULD_NOT_RETRIEVE_PLAYLIST("error.playlist.unreachable");
 
     private String title;
 

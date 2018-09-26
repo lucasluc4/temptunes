@@ -7,16 +7,11 @@ services:
     image: temptunes
     ports:
       - "8080:8080"
-    networks:
-      - temptunesnetwork
+    environment:
+      REDIS_DB_HOST: redis:6379
     depends_on:
       - redis
   redis:
     image: redis
     ports:
       - "6379:6379"
-    networks:
-      - temptunesnetwork
-
-networks:
-  temptunesnetwork:
