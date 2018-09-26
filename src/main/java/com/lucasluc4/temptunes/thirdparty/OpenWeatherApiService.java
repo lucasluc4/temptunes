@@ -7,6 +7,8 @@ import com.lucasluc4.temptunes.thirdparty.dto.OpenWeatherDTO;
 import com.lucasluc4.temptunes.thirdparty.dto.parser.OpenWeatherDTOParser;
 import com.lucasluc4.temptunes.utils.FeingBuilderUtil;
 import feign.FeignException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -15,18 +17,28 @@ import javax.annotation.PostConstruct;
 @Service
 public class OpenWeatherApiService {
 
+    private static final String OPEN_WEATHER_API_URL = "openweather.url.api";
+    private static final String OPEN_WEATHER_API_KEY = "openweather.api.key";
+
     private OpenWeatherApi openWeatherApi;
+
+    private Environment environment;
+
+    @Autowired
+    public OpenWeatherApiService(Environment environment) {
+        this.environment = environment;
+    }
 
     @PostConstruct
     public void init () {
         openWeatherApi = new FeingBuilderUtil<>(OpenWeatherApi.class)
-                .build("https://api.openweathermap.org/data/2.5");
+                .build(environment.getProperty(OPEN_WEATHER_API_URL));
     }
 
     public Weather getWeatherByCity (String city) {
 
         try {
-            OpenWeatherDTO dto = openWeatherApi.getWeatherByCityName(city);
+            OpenWeatherDTO dto = openWeatherApi.getWeatherByCityName(city, environment.getProperty(OPEN_WEATHER_API_KEY));
             return OpenWeatherDTOParser.parse(dto);
         } catch (FeignException e) {
 
@@ -40,7 +52,7 @@ public class OpenWeatherApiService {
     }
 
     public Weather getWeatherByLatLng(Double lat, Double lng) {
-        OpenWeatherDTO dto = openWeatherApi.getWeatherByLatLng(lat, lng);
+        OpenWeatherDTO dto = openWeatherApi.getWeatherByLatLng(lat, lng, environment.getProperty(OPEN_WEATHER_API_KEY));
         return OpenWeatherDTOParser.parse(dto);
     }
 }

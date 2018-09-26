@@ -26,6 +26,13 @@ import java.util.Map;
 @Service
 public class SpotifyApiService {
 
+    private static final String REDIS_BUCKET_TOKEN = "spotify.redis.bucket.token";
+    private static final String REDIS_AUTH_LOCK = "spotify.redis.lock.auth";
+    private static final String SPOTIFY_URL_API = "spotify.url.api";
+    private static final String SPOTIFY_URL_ACCOUNTS = "spotify.url.accounts";
+    private static final String SPOTIFY_CLIENT_ID = "spotify.client.id";
+    private static final String SPOTIFY_CLIENT_SECRET = "spotify.client.secret";
+
     private SpotifyApi spotifyApi;
 
     private LoginSpotifyApi loginSpotifyApi;
@@ -43,17 +50,18 @@ public class SpotifyApiService {
     @PostConstruct
     public void init () {
         spotifyApi = new FeingBuilderUtil<>(SpotifyApi.class)
-                .build("https://api.spotify.com/v1");
+                .build(environment.getProperty(SPOTIFY_URL_API));
 
         loginSpotifyApi = new FeingBuilderUtil<>(LoginSpotifyApi.class)
-                .build("https://accounts.spotify.com/api", new FormEncoder());
+                .build(environment.getProperty(SPOTIFY_URL_ACCOUNTS), new FormEncoder());
     }
 
     public Playlist getPlaylistById (String id) {
 
         try {
 
-            RBucket<String> bucket = redissonClient.getRedissonClient().getBucket("SpotifyBearerToken");
+            RBucket<String> bucket = redissonClient.getRedissonClient()
+                    .getBucket(environment.getProperty(REDIS_BUCKET_TOKEN));
             String bearerToken = bucket.get();
 
             if (bearerToken == null) {
@@ -84,15 +92,14 @@ public class SpotifyApiService {
 
     private String authenticate() {
 
-        RLock lock = redissonClient.getRedissonClient()
-                .getLock(environment.getProperty("spotify.redis.lock.auth"));
+        RLock lock = redissonClient.getRedissonClient().getLock(environment.getProperty(REDIS_AUTH_LOCK));
 
         lock.lock();
 
         if (lock.isHeldByCurrentThread()) {
 
-            String clientId = "7922f406cc7d4f97816e7bc57dcb19bd";
-            String clientSecret = "897d072d200443208293b435b7906993";
+            String clientId = environment.getProperty(SPOTIFY_CLIENT_ID);
+            String clientSecret = environment.getProperty(SPOTIFY_CLIENT_SECRET);
 
             String basicAuthHeader = clientId + ":" + clientSecret;
             String encodedBasicAuthHeader = new String(new Base64().encode(basicAuthHeader.getBytes()));
@@ -105,7 +112,7 @@ public class SpotifyApiService {
             String bearerToken = response.getAccess_token();
 
             RBucket<String> bucket = redissonClient.getRedissonClient()
-                    .getBucket(environment.getProperty("spotify.redis.bucket.token"));
+                    .getBucket(environment.getProperty(REDIS_BUCKET_TOKEN));
             bucket.set(bearerToken);
 
             lock.unlock();

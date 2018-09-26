@@ -9,6 +9,9 @@ services:
       - "8080:8080"
     environment:
       REDIS_DB_HOST: redis:6379
+      SPOTIFY_CLIENT_ID: 7922f406cc7d4f97816e7bc57dcb19bd
+      SPOTIFY_CLIENT_SECRET: 897d072d200443208293b435b7906993
+      OPEN_WEATHER_API_KEY: 682dee6999740b69481061da544a257c
     depends_on:
       - redis
   redis:
