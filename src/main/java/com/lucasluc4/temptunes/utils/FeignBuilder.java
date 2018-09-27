@@ -6,11 +6,11 @@ import feign.codec.Encoder;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 
-public class FeingBuilderUtil<T> {
+public class FeignBuilder<T> {
 
     private final Class<T> apiTypeClass;
 
-    public FeingBuilderUtil(Class<T> apiTypeClass) {
+    public FeignBuilder(Class<T> apiTypeClass) {
         this.apiTypeClass  = apiTypeClass;
     }
 

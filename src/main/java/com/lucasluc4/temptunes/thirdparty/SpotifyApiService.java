@@ -8,7 +8,7 @@ import com.lucasluc4.temptunes.redisson.TemptunesRedissonClient;
 import com.lucasluc4.temptunes.thirdparty.dto.SpotifyPlaylistDTO;
 import com.lucasluc4.temptunes.thirdparty.dto.SpotifyTokenDTO;
 import com.lucasluc4.temptunes.thirdparty.dto.parser.SpotifyPlaylistDTOParser;
-import com.lucasluc4.temptunes.utils.FeingBuilderUtil;
+import com.lucasluc4.temptunes.utils.FeignBuilder;
 import feign.FeignException;
 import feign.form.FormEncoder;
 import org.apache.commons.codec.binary.Base64;
@@ -32,32 +32,20 @@ public class SpotifyApiService {
 
     private static final String REDIS_BUCKET_TOKEN = "spotify.redis.bucket.token";
     private static final String REDIS_AUTH_LOCK = "spotify.redis.lock.auth";
-    private static final String SPOTIFY_URL_API = "spotify.url.api";
-    private static final String SPOTIFY_URL_ACCOUNTS = "spotify.url.accounts";
     private static final String SPOTIFY_CLIENT_ID = "spotify.client.id";
     private static final String SPOTIFY_CLIENT_SECRET = "spotify.client.secret";
 
-    private SpotifyApi spotifyApi;
-
-    private LoginSpotifyApi loginSpotifyApi;
+    private ThirdPartyApisComponent thirdPartyApisComponent;
 
     private TemptunesRedissonClient redissonClient;
 
     private Environment environment;
 
     @Autowired
-    public SpotifyApiService(TemptunesRedissonClient redissonClient, Environment environment) {
+    public SpotifyApiService(TemptunesRedissonClient redissonClient, Environment environment, ThirdPartyApisComponent thirdPartyApisComponent) {
         this.redissonClient = redissonClient;
         this.environment = environment;
-    }
-
-    @PostConstruct
-    public void init () {
-        spotifyApi = new FeingBuilderUtil<>(SpotifyApi.class)
-                .build(environment.getProperty(SPOTIFY_URL_API));
-
-        loginSpotifyApi = new FeingBuilderUtil<>(LoginSpotifyApi.class)
-                .build(environment.getProperty(SPOTIFY_URL_ACCOUNTS), new FormEncoder());
+        this.thirdPartyApisComponent = thirdPartyApisComponent;
     }
 
     public Playlist getPlaylistById (String id) {
@@ -81,7 +69,8 @@ public class SpotifyApiService {
 
             Map<String, Object> headerMap = new HashMap<>();
             headerMap.put("Authorization", "Bearer " + bearerToken);
-            SpotifyPlaylistDTO spotifyPlaylistDTO = spotifyApi.getPlaylistById(id, headerMap);
+            SpotifyPlaylistDTO spotifyPlaylistDTO = thirdPartyApisComponent.getSpotifyApi()
+                    .getPlaylistById(id, headerMap);
 
             LOGGER.info("Playlist retrieved.");
 
@@ -129,7 +118,8 @@ public class SpotifyApiService {
 
             LOGGER.info("Authenticating...");
 
-            SpotifyTokenDTO response = loginSpotifyApi.getToken("client_credentials", headerMap);
+            SpotifyTokenDTO response = thirdPartyApisComponent.getLoginSpotifyApi()
+                    .getToken("client_credentials", headerMap);
 
             LOGGER.info("Token retrieved.");
 
