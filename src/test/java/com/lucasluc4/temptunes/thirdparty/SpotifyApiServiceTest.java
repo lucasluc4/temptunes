@@ -1,19 +1,19 @@
 package com.lucasluc4.temptunes.thirdparty;
 
-import com.lucasluc4.temptunes.thirdparty.dto.SpotifyItemDTO;
-import com.lucasluc4.temptunes.thirdparty.dto.SpotifyPlaylistDTO;
-import com.lucasluc4.temptunes.thirdparty.dto.SpotifyTrackDTO;
-import com.lucasluc4.temptunes.thirdparty.dto.SpotifyTracksDTO;
+import com.lucasluc4.temptunes.exception.GenericTempTunesException;
+import com.lucasluc4.temptunes.thirdparty.dto.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -24,7 +24,7 @@ public class SpotifyApiServiceTest {
     private SpotifyAuthService spotifyAuthService;
 
     @Mock
-    private ThirdPartyApisComponent thirdPartyApisComponent;
+    private SpotifyApi spotifyApi;
 
     @InjectMocks
     private SpotifyApiService spotifyApiService;
@@ -32,18 +32,63 @@ public class SpotifyApiServiceTest {
     @Test
     public void getTokenFromSpotifyAuthServiceAndGetPlaylistFromApi () {
 
-        SpotifyPlaylistDTO spotifyPlaylistDTO = createSpotifyPlaylistDTOMock();
-
-        SpotifyApi spotifyApi = mock(SpotifyApi.class);
-
         when(spotifyAuthService.getToken()).thenReturn("");
-        when(thirdPartyApisComponent.getSpotifyApi()).thenReturn(spotifyApi);
-        when(spotifyApi.getPlaylistById(anyString(), anyMap())).thenReturn(spotifyPlaylistDTO);
+        when(spotifyApi.getPlaylistById(anyString(), anyString())).thenReturn(createSuccessfulSpotifyPlaylistResponse());
 
         spotifyApiService.getPlaylistById("test");
 
         verify(spotifyAuthService, times(1)).getToken();
-        verify(spotifyApi, times(1)).getPlaylistById(anyString(), anyMap());
+        verify(spotifyApi, times(1)).getPlaylistById(anyString(), anyString());
+    }
+
+    @Test
+    public void willTryToAuthenticateAgainInCaseOfInvalidToken () {
+
+        when(spotifyAuthService.getToken()).thenReturn("");
+
+        when(spotifyApi.getPlaylistById(anyString(), anyString())).thenAnswer(new Answer() {
+            private int count = 0;
+
+            public Object answer(InvocationOnMock invocation) {
+                if (count == 0) {
+                    count++;
+                    return createErrorSpotifyPlaylistResponse(HttpStatus.UNAUTHORIZED);
+                }
+
+                return createSuccessfulSpotifyPlaylistResponse();
+            }
+        });
+
+        spotifyApiService.getPlaylistById("test");
+
+        verify(spotifyAuthService, times(1)).authenticate();
+        verify(spotifyAuthService, times(2)).getToken();
+        verify(spotifyApi, times(2)).getPlaylistById(anyString(), anyString());
+    }
+
+    @Test(expected = GenericTempTunesException.class)
+    public void willThrowExceptionInCaseOfUnmappedError () {
+
+        when(spotifyAuthService.getToken()).thenReturn("");
+        when(spotifyApi.getPlaylistById(anyString(), anyString())).thenReturn(createErrorSpotifyPlaylistResponse(HttpStatus.BAD_REQUEST));
+
+        spotifyApiService.getPlaylistById("test");
+    }
+
+    private SpotifyPlaylistResponse createSuccessfulSpotifyPlaylistResponse () {
+        SpotifyPlaylistResponse spotifyPlaylistResponse = new SpotifyPlaylistResponse();
+        spotifyPlaylistResponse.setPlaylist(createSpotifyPlaylistDTOMock());
+        spotifyPlaylistResponse.setInfo(createSuccessResponseInfoMock());
+
+        return spotifyPlaylistResponse;
+    }
+
+    private ResponseInfo createSuccessResponseInfoMock () {
+        ResponseInfo responseInfo = new ResponseInfo();
+        responseInfo.setCode(HttpStatus.OK.value());
+        responseInfo.setStatus(ResponseStatus.SUCCESS);
+
+        return responseInfo;
     }
 
     private SpotifyPlaylistDTO createSpotifyPlaylistDTOMock(){
@@ -65,6 +110,21 @@ public class SpotifyApiServiceTest {
         spotifyPlaylistDTO.setTracks(tracksDTO);
 
         return spotifyPlaylistDTO;
+    }
+
+    private SpotifyPlaylistResponse createErrorSpotifyPlaylistResponse(HttpStatus status) {
+        SpotifyPlaylistResponse response = new SpotifyPlaylistResponse();
+        response.setInfo(createErrorResponseInfoMock(status.value()));
+
+        return response;
+    }
+
+    private ResponseInfo createErrorResponseInfoMock (int code) {
+        ResponseInfo responseInfo = new ResponseInfo();
+        responseInfo.setCode(code);
+        responseInfo.setStatus(ResponseStatus.ERROR);
+
+        return responseInfo;
     }
 
 }

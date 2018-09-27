@@ -18,7 +18,7 @@ public class ThirdPartyApisComponent {
 
     private OpenWeatherApi openWeatherApi;
 
-    private SpotifyApi spotifyApi;
+    private SpotifyApiFeign spotifyApi;
 
     private LoginSpotifyApi loginSpotifyApi;
 
@@ -34,7 +34,7 @@ public class ThirdPartyApisComponent {
         openWeatherApi = new FeignBuilder<>(OpenWeatherApi.class)
                 .build(environment.getProperty(OPEN_WEATHER_API_URL));
 
-        spotifyApi = new FeignBuilder<>(SpotifyApi.class)
+        spotifyApi = new FeignBuilder<>(SpotifyApiFeign.class)
                 .build(environment.getProperty(SPOTIFY_URL_API));
 
         loginSpotifyApi = new FeignBuilder<>(LoginSpotifyApi.class)
@@ -45,7 +45,7 @@ public class ThirdPartyApisComponent {
         return openWeatherApi;
     }
 
-    public SpotifyApi getSpotifyApi() {
+    public SpotifyApiFeign getSpotifyApi() {
         return spotifyApi;
     }
 

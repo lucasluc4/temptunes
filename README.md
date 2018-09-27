@@ -103,8 +103,9 @@ integração do Feign com o Spring, mas foi utilizado o FeignCore nesse projeto,
 
 O principal problema do Feign é disparar exceptions ao invés de um objeto contendo informações de erro. Dessa forma,
 o ideal é encapsular as APIs para que não sejam feitos tratamentos de fluxo via exception, como é feito com o fluxo de
-reautenticação em caso de token inválido ao consumir a API do Spotify. Esse é um ponto
-claro de melhoria desse código.
+reautenticação em caso de token inválido ao consumir a API do Spotify.
+
+Uma possível melhoria é substituir por clients HTTP que não iniciem fluxos via exception.
 
 ### Actuator
 
@@ -165,5 +166,4 @@ seria bem maior, mas por efeito de tempo, alguns pontos foram priorizados nos te
 Alguns refactorings podem ser feitos para melhorar a qualidade dos testes. Alguns fluxos
 de exceção de API não foram testados porque não se conseguia lançar uma FeignException mockada.
 Tendo a necessidade, portanto, de se criar um wrapper em cima desses Serviços de API que lancem
-exceções que se tem controle, para que fluxos de tratamento de exceções possam ser testados. Um exemplo,
-é o processo de reautenticação no Spotify no caso de um token inválido.
+exceções que se tem controle, para que fluxos de tratamento de exceções possam ser testados.

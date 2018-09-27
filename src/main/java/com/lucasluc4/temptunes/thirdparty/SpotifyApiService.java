@@ -3,31 +3,27 @@ package com.lucasluc4.temptunes.thirdparty;
 import com.lucasluc4.temptunes.exception.GenericTempTunesException;
 import com.lucasluc4.temptunes.exception.PlaylistNotFoundException;
 import com.lucasluc4.temptunes.model.Playlist;
-import com.lucasluc4.temptunes.thirdparty.dto.SpotifyPlaylistDTO;
+import com.lucasluc4.temptunes.thirdparty.dto.ResponseStatus;
+import com.lucasluc4.temptunes.thirdparty.dto.SpotifyPlaylistResponse;
 import com.lucasluc4.temptunes.thirdparty.dto.parser.SpotifyPlaylistDTOParser;
-import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Service
 public class SpotifyApiService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpotifyApiService.class);
 
-    private ThirdPartyApisComponent thirdPartyApisComponent;
+    private SpotifyApi spotifyApi;
 
     private SpotifyAuthService spotifyAuthService;
 
     @Autowired
-    public SpotifyApiService(ThirdPartyApisComponent thirdPartyApisComponent,
-                             SpotifyAuthService spotifyAuthService) {
-        this.thirdPartyApisComponent = thirdPartyApisComponent;
+    public SpotifyApiService(SpotifyApi spotifyApi, SpotifyAuthService spotifyAuthService) {
+        this.spotifyApi = spotifyApi;
         this.spotifyAuthService = spotifyAuthService;
     }
 
@@ -35,37 +31,30 @@ public class SpotifyApiService {
 
         LOGGER.info("Retrieving playlist for id: " + id);
 
-        try {
+        String bearerToken = spotifyAuthService.getToken();
 
-            String bearerToken = spotifyAuthService.getToken();
+        LOGGER.info("Retrieving playlist from Spotify");
 
-            LOGGER.info("Retrieving playlist from Spotify");
+        SpotifyPlaylistResponse response = spotifyApi.getPlaylistById(id, bearerToken);
 
-            Map<String, Object> headerMap = new HashMap<>();
-            headerMap.put("Authorization", "Bearer " + bearerToken);
-            SpotifyPlaylistDTO spotifyPlaylistDTO = thirdPartyApisComponent.getSpotifyApi()
-                    .getPlaylistById(id, headerMap);
-
+        if (ResponseStatus.SUCCESS.equals(response.getInfo().getStatus())) {
             LOGGER.info("Playlist retrieved.");
-
-            return SpotifyPlaylistDTOParser.parse(spotifyPlaylistDTO);
-
-        } catch (FeignException e) {
-
-            if (e.status() == HttpStatus.NOT_FOUND.value()) {
-                throw new PlaylistNotFoundException("Playlist not found: " + id);
-            }
-
-            if (e.status() == HttpStatus.UNAUTHORIZED.value()) {
-
-                LOGGER.info("Token is invalid. Trying to authenticate again.");
-
-                spotifyAuthService.authenticate();
-                return getPlaylistById(id);
-            }
-
-            throw new GenericTempTunesException();
+            return SpotifyPlaylistDTOParser.parse(response.getPlaylist());
         }
+
+        LOGGER.error("Error retrieving playlist from Spotify: " + response.getInfo().getMessage());
+
+        if (response.getInfo().getCode() == HttpStatus.NOT_FOUND.value()) {
+            throw new PlaylistNotFoundException("Playlist not found: " + id);
+        }
+
+        if (response.getInfo().getCode() == HttpStatus.UNAUTHORIZED.value()) {
+            LOGGER.error("Invalid token. Trying to authenticate again.");
+            spotifyAuthService.authenticate();
+            return getPlaylistById(id);
+        }
+
+        throw new GenericTempTunesException();
 
     }
 
