@@ -62,6 +62,8 @@ public class SpotifyApi {
         responseInfo.setCode(e.status());
         responseInfo.setMessage(e.getMessage());
 
+        response.setInfo(responseInfo);
+
         return response;
     }
 }
