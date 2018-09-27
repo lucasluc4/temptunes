@@ -8,9 +8,7 @@ import com.lucasluc4.temptunes.redisson.TemptunesRedissonClient;
 import com.lucasluc4.temptunes.thirdparty.dto.SpotifyPlaylistDTO;
 import com.lucasluc4.temptunes.thirdparty.dto.SpotifyTokenDTO;
 import com.lucasluc4.temptunes.thirdparty.dto.parser.SpotifyPlaylistDTOParser;
-import com.lucasluc4.temptunes.utils.FeignBuilder;
 import feign.FeignException;
-import feign.form.FormEncoder;
 import org.apache.commons.codec.binary.Base64;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLock;
@@ -21,7 +19,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 
