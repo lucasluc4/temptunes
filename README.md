@@ -101,6 +101,11 @@ dependências: tudo é mais fácil (e rápido) com a familiaridade com a linguag
 Novamente, uma escolha por familiaridade, para um client HTTP, com bastante documentação e uma comunidade ativa. Existe uma
 integração do Feign com o Spring, mas foi utilizado o FeignCore nesse projeto, apenas, por fins de simplicidade.
 
+O principal problema do Feign é disparar exceptions ao invés de um objeto contendo informações de erro. Dessa forma,
+o ideal é encapsular as APIs para que não sejam feitos tratamentos de fluxo via exception, como é feito com o fluxo de
+reautenticação em caso de token inválido ao consumir a API do Spotify. Esse é um ponto
+claro de melhoria desse código.
+
 ### Actuator
 
 Com a idéia da resiliência, foi colocado um mínimo de suporte a monitoramento, utilizando o Actuator do Spring, para alguma
@@ -156,3 +161,9 @@ tenha sido implementada, mas é sugerida como melhoria.
 
 Foram desenvolvidos alguns testes unitários na aplicação em alguns pontos-chave, utilizando o junit. Idealmente, a cobertura de testes
 seria bem maior, mas por efeito de tempo, alguns pontos foram priorizados nos testes. 
+
+Alguns refactorings podem ser feitos para melhorar a qualidade dos testes. Alguns fluxos
+de exceção de API não foram testados porque não se conseguia lançar uma FeignException mockada.
+Tendo a necessidade, portanto, de se criar um wrapper em cima desses Serviços de API que lancem
+exceções que se tem controle, para que fluxos de tratamento de exceções possam ser testados. Um exemplo,
+é o processo de reautenticação no Spotify no caso de um token inválido.
